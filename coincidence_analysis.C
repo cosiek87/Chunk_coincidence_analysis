@@ -22,10 +22,10 @@ using namespace std;
 
 void coincidence_analysis() {
 
-    cout << "liczba pomiarow" << liczba_pomiarow << endl;
+    // cout << "Liczba analizowanych pomiarow " << liczba_pomiarow << endl;
 
+    // cout << "Przygotowanie wektorow" << endl;
 
-	cout << "Przygotowanie" << endl;
     char name[20];
 	char title[100];
     h = new TH1F**[liczba_det];
@@ -57,29 +57,27 @@ void coincidence_analysis() {
 		total_h_2d[i] = new TH2F(name, title, 400, minimum, maksimum, 400, minimum, maksimum);
 	}
 
-    
-
-	cout << "Rozpoczeto program" << endl;
+	// cout << "Przygotowanie plikow" << endl;
 
     openAndSetupFiles("DataR_run-001.root", "new_Analysis_DataR_run-001.root", inputFile, inputTree, f_output, energia, czas, channel);
 
-	cout << "Otwarto pliki" << endl;
+	// cout << "Otwarto pliki \n Tworzenie wektora obrotow" << endl;
 
-    timeVectorComputing("czas_do_kalibracji.txt"); 
+    timeVectorComputing(); 
 
-	cout << "N_entries" << n_entries << endl;
+	// cout << "Wektor obrotow policzony \n Przygotowanie histogramow totalnych dla n_entries " << n_entries << endl;
 
     fillTotalVectors(false);
 
-	cout << "Wypelniono podstawowe histogramy" << endl;
+	// cout << "Wypelniono histogramy h_total \n Przygotowanie do przedswstepnych dopasowan " << n_entries << endl;
 
     preFitting();
 
-	cout << "Przeprowadzono wstepne dopasowania" << endl;
+	// cout << "Przeprowadzono wstepne dopasowanie \n Rozpoczecie analizy koincydencyjnej w chunks " << n_entries << endl;
 
     findCoincidence();
 
-	cout << "Znaleziono wszystkie koincydencjie" << endl;
+	// cout << "Analiza koincydencyjna zakonczona. Wprowadzono elementow " << n_entried_entries  << "\n Dalsza analiza danych" << n_entries << endl;
 
     f_output->Write();
 }
