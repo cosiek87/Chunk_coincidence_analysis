@@ -198,6 +198,13 @@ void timeVectorComputing(const char* fileName) {
     wektor_czasu = vecOfStr;
 };
 
+void timeVectorComputing() {
+    inputTree -> GetEntry(n_entries-1);
+    std::vector < ULong64_t > vecOfStr; // Sprawdza czy plik jest ok
+    vecOfStr.push_back(czas);
+    wektor_czasu = vecOfStr;
+};
+
 
 void fillTotalVectors(bool limit_511_kev){
     for (Int_t i = 0; i < n_entries; i++) {

@@ -51,7 +51,6 @@ void coincidence_analysis() {
 		sprintf(title, "Spektrum delta time det %i", i);
 		h_delta_time[i] = new TH1F(name, title, 5e3, 0, 1e5);
 	}
-	cout<<"Przygotowywanie widm czastkowych 2d"<<endl;
 	for (Int_t i = 0; i < liczba_par_det; i++) {
 		sprintf(name, "spek_total_2d_det_%d", i);
 		sprintf(title, "Spektrum calkowite 2D det %d", i);
