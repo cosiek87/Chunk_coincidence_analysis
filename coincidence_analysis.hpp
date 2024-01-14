@@ -81,9 +81,16 @@ Double_t zliczenia_amplituda = maksimum / numberofbins;
 
 vector < ULong64_t > wektor_czasu;
 
-Int_t n_entries;
+ULong64_t closest_time_high, closest_time_low, delta_time_high, delta_time_low, delta_time;
+
+ULong64_t n_entries;
 
 Int_t stan, pozycja;
+
+ULong64_t chunk = -1;
+ULong64_t begin_chunk, end_chunk, chunks, length_of_chunk;
+ULong64_t limit_list = 1000000;
+ULong64_t bufor = 100000;
 
 vector < vector < Double_t >> zakres_energii;
 vector < vector < Double_t >> zliczenia;
@@ -99,8 +106,10 @@ TH2F*** h_2d;
 TH1F** total_h;
 TH2F** total_h_2d;
 TH1F** h_delta_time;
-
 TF1 * pre_dopasowanie[6];
+auto h_time = new TH1F("spek_time", "Widmo czasowe", 1e5, 0, 6e5);
+auto h_step_time = new TH1F("spek_step_time", "Widmo krokow", 1e5, 0, 6e5);
+auto h_rot_time = new TH1F("spek_rot_time", "Widmo momentow obrotu", 1e5, 0, 6e5);
 
 
 bool within511kevRange(vector < vector < Double_t >> &zakres_energii, UShort_t E, UShort_t Ch){
@@ -202,7 +211,7 @@ void openAndSetupFiles(const char* sourceFileName, const char* outputFileName,
 };
 
 
-void openAndSetupFiles(const char* sourceFileName, const char* outputFileName, Int_t custom_n_entries,
+void openAndSetupFiles(const char* sourceFileName, const char* outputFileName, ULong64_t custom_n_entries,
                 TFile*& inputFile, TTree*& inputTree,
                 TFile*& outputFile,
                 UShort_t& energiaVar,
@@ -238,7 +247,7 @@ void timeVectorComputing(const char* fileName) {
 void fillTotalVectors(bool limit_511_kev){
     for (Int_t i = 0; i < n_entries; i++) {
         inputTree -> GetEntry(i);
-        // if (i < 100) cout <<"Czas dla "<< i << ": " << czas << endl;
+        if (channel == 7) h_step_time -> Fill(czas / 1e12); // widmo krokow silnika
         if (channel > 5) continue;
         if (channel < start_det || channel >= stop_det) continue;
         channel %= liczba_det;
@@ -271,41 +280,127 @@ void preFitting(){
 }
 
 
-void coincidenceTimeVectors(Int_t beginning, Int_t end) {
+void coincidenceTimeVectors(ULong64_t beginning, ULong64_t ending) {
     if (beginning!=0) {
         czasy.clear();
         pozycje.clear();
         wektor_timestamp.clear();
         wektor_entry.clear();
     };
-    czasy.resize(end - beginning);
-    pozycje.resize(end - beginning);
+    czasy.resize(ending - beginning);
+    pozycje.resize(ending - beginning);
     wektor_timestamp.resize(liczba_par_det, vector < vector < ULong64_t >> (liczba_pomiarow, czasy));
     wektor_entry.resize(liczba_par_det, vector < vector < Int_t >> (liczba_pomiarow, pozycje));
     cout << "start petli w coincidenceTimeVectors" << endl;
-    for (Int_t i = beginning; i < end; i++) {
-        inputTree -> GetEntry(i);
-        if (i%100==0) cout << i << endl;
-        if (i < 100) cout <<"Czas dla "<< i << ": " << czas << endl;
-        stan = measurementPoint(wektor_czasu, czas); //stan tarczy: wartosc nieparzysta - obrot, parzysta - pomiar
-        cout << "Stan: " << stan << endl;
-        pozycja = stan / 2;
-        cout << "Pozycja: " << pozycja << endl;
-        if ((channel > 5) && ((stan % 2) == 0)) continue;
-        if ((channel % 2) == 0) continue;
-        if ((channel < start_det) || (channel >= stop_det)) continue;
-        channel %= liczba_det;
-        wektor_timestamp[(channel - 1) / 2][pozycja].push_back(czas); // wypelniany jest wektor z czasem do koincydencji
-        wektor_entry[(channel - 1) / 2][pozycja].push_back(i); // wypelniane jest widmo energetyczne w zaleznosci od kanalu i pozycji
-    }
-    cout << "stworzyla sie macierz koincydencji entry od "<< beginning <<" do "<< end << endl;
+        for (ULong64_t i = beginning; i < ending; i++) {
+            inputTree -> GetEntry(i);
+            stan = measurementPoint(wektor_czasu, czas); //stan tarczy: wartosc nieparzysta - obrot, parzysta - pomiar
+            pozycja = stan / 2;
+		    if (i%1000000 == 0) cout<<i<<endl;
+            if ((channel > 5) && ((stan % 2) == 0)) continue;
+            if ((channel % 2) == 0) continue;
+            if ((channel < start_det) || (channel >= stop_det)) continue;
+            channel %= liczba_det;
+            wektor_timestamp[(channel - 1) / 2][pozycja].push_back(czas); // wypelniany jest wektor z czasem do koincydencji
+            wektor_entry[(channel - 1) / 2][pozycja].push_back(i); // wypelniane jest widmo energetyczne w zaleznosci od kanalu i pozycji
+        }
+    cout << "stworzyla sie macierz koincydencji entry od "<< beginning <<" do "<< ending << endl;
 }
 
 
+bool w_zakresie_elipsy(UShort_t energia_dol, UShort_t energia_gora, UShort_t channel,TF1 * pre_dopasowanie[], Double_t ile_sigma) {
+    UShort_t srodek_1 = pre_dopasowanie[channel-1] -> GetParameter(1), srodek_2 = pre_dopasowanie[channel] -> GetParameter(1);
+    UShort_t sigma_1 = pre_dopasowanie[channel-1] -> GetParameter(2), sigma_2 = pre_dopasowanie[channel] -> GetParameter(2);
+    if (TMath::Power((energia_dol - srodek_1) / (ile_sigma*sigma_1), 2) + TMath::Power((energia_gora - srodek_2) 
+        / (ile_sigma*sigma_2), 2) > 1) return true;
+    return false;
+}
 
 
+void getChunksTimeVector(ULong64_t& length_of_chunk, ULong64_t& chunks, ULong64_t n_entries, ULong64_t limit_list){
+    if (n_entries < limit_list){
+        chunks = 1;
+        length_of_chunk = n_entries;
+        return;
+    }
+    chunks = (n_entries/limit_list)+1;
+    length_of_chunk = n_entries/chunks;
+}
 
 
+void getLimitsNewTimeVector(ULong64_t& chunk, ULong64_t& begin_chunk, ULong64_t& end_chunk, ULong64_t n_entries, ULong64_t length_of_chunk, ULong64_t chunks, ULong64_t bufor){
+    if (chunks == 1){
+        begin_chunk = 0;
+        end_chunk = n_entries;
+        cout << "not increase number of chunk" << endl;
+        return;
+    }
+    if (chunk < (chunks - 1)){
+        chunk = chunk + 1;
+        begin_chunk = max(chunk * length_of_chunk - bufor, static_cast<ULong64_t>(0));
+        end_chunk = min((chunk + 1) * length_of_chunk + bufor, n_entries);
+        cout << "increase number of chunk" << endl;
+    }
+}
+
+
+void findCoincidence(){
+    getChunksTimeVector(length_of_chunk, chunks, n_entries, limit_list);
+    cout << chunks << " " << length_of_chunk << " " << n_entries << endl;
+    getLimitsNewTimeVector(chunk, begin_chunk, end_chunk, n_entries, length_of_chunk, chunks, bufor);
+    coincidenceTimeVectors(begin_chunk, end_chunk);
+    cout << "Zakres danych to " << begin_chunk << " " << end_chunk << endl;
+    for (ULong64_t i = 0; i < n_entries; i++) {
+        if ((end_chunk - i) < bufor && i < (n_entries - bufor)) {
+            getLimitsNewTimeVector(chunk, begin_chunk, end_chunk, n_entries, length_of_chunk, chunks, bufor);
+            coincidenceTimeVectors(begin_chunk, end_chunk);
+            cout << "Zakres danych to " << begin_chunk << " " << end_chunk << endl;
+            }; 
+		inputTree -> GetEntry(i);
+		stan = measurementPoint(wektor_czasu, czas); //stan tarczy: wartosc nieparzysta - obrot, parzysta - pomiar
+		pozycja = stan / 2;
+		// if (w_zakresie_511kev(energia, channel)) continue;
+		if (channel > 5) continue;
+		if (channel % 2 == 1) continue; // jesli event jest zebrany na kanale innym niz do ktorych byly podlaczone detektory, kod przechodzi do kolejnego eventu
+		if (channel < start_det || channel >= stop_det) continue;
+		channel %= liczba_det;
+		auto closest_higher_time_index = searchClosest(wektor_timestamp[(channel) / 2][pozycja], czas);
+		auto closest_lower_time_index = (closest_higher_time_index - 1) * ((closest_higher_time_index - 1) > 0);
+		if (closest_higher_time_index > wektor_timestamp[(channel) / 2][pozycja].size() - 1 ||
+			closest_lower_time_index > wektor_timestamp[(channel) / 2][pozycja].size() - 1 ||
+			closest_higher_time_index > wektor_entry[(channel) / 2][pozycja].size() - 1 ||
+			closest_lower_time_index > wektor_entry[(channel) / 2][pozycja].size() - 1) continue;
+		closest_time_high = wektor_timestamp[(channel) / 2][pozycja][closest_higher_time_index];
+		closest_time_low = wektor_timestamp[(channel) / 2][pozycja][closest_lower_time_index];
+		delta_time_high = max(closest_time_high, czas) - min(closest_time_high, czas);
+		delta_time_low = max(closest_time_low, czas) - min(closest_time_low, czas);
+		auto closest_time_index = closest_higher_time_index;
+		delta_time = delta_time_high;
+		if (delta_time_high > delta_time_low) {
+			closest_time_index = closest_lower_time_index;
+			delta_time = delta_time_low;
+		}	
+		h_delta_time[(channel) / 2] -> Fill(delta_time);
+		// cout<<wektor_timestamp[(channel-1)/2][pozycja][closest_time_index]<<" najblizszy czas do "<<czas<<endl;
+		// cout << "kanal "<<channel<<endl;
+		// cout << "delta time "<<delta_time<<endl;
+		if (i%1000000 == 0) cout<<i<<endl;
+		if (delta_time < czas_koincydencji[(channel) / 2]) {
+			energia_other = energia;
+			inputTree -> GetEntry(wektor_entry[(channel) / 2][pozycja][closest_time_index]);
+			if (channel < start_det || channel >= stop_det) continue;
+			channel %= liczba_det;	
+			if (w_zakresie_elipsy(energia_other, energia, channel, pre_dopasowanie, ile_sigma)) continue;
+			h[channel-1][pozycja] -> Fill(energia_other); // wypelniane jest widmo energetyczne w zaleznosci od kanalu i pozycji
+			h[channel][pozycja] -> Fill(energia); // wypelniane jest widmo energetyczne w zaleznosci od kanalu i pozycji
+			h_2d[(channel) / 2][pozycja] -> Fill(energia_other, energia);
+			total_h_2d[(channel) / 2] -> Fill(energia_other, energia);
+			// n_entried_entries++; //zwiekszana jest liczba oznaczajaca eventy ktore przeszly analize
+		} else continue;
+	}
+	cout<<"Eksport danych"<<endl;
+    wektor_czasu.insert(wektor_czasu.end(), czas); // na koniec wektora czasu dorzucany jest koniec pomiaru.
+}
 
 
 

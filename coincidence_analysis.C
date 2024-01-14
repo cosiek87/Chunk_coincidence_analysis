@@ -27,20 +27,25 @@ void coincidence_analysis() {
 
 	cout << "Rozpoczeto program" << endl;
 
-    openAndSetupFiles("DataR_run-001.root", "new_Analysis_DataR_run-001.root",1e6, inputFile, inputTree, f_output, energia, czas, channel);
+    openAndSetupFiles("DataR_run-001.root", "new_Analysis_DataR_run-001.root",20000000, inputFile, inputTree, f_output, energia, czas, channel);
 
 	cout << "Otwarto pliki" << endl;
 
     timeVectorComputing("czas_do_kalibracji.txt"); // wektor bedzie dostepny pod PA.wektor_czasu
 
-	cout << "NENTRIES" << n_entries << endl;
+	cout << "N_entries" << n_entries << endl;
 
     fillTotalVectors(false);
 
+	cout << "Wypelniono podstawowe histogramy" << endl;
+
     preFitting();
 
-    coincidenceTimeVectors(0,1000);
-    coincidenceTimeVectors(1000,2000);
+	cout << "Przeprowadzono wstepne dopasowania" << endl;
+
+    findCoincidence();
+
+	cout << "Znaleziono wszystkie koincydencjie" << endl;
 
     f_output->Write();
 }
