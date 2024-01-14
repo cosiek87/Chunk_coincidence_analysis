@@ -27,24 +27,20 @@ void coincidence_analysis() {
 
 	cout << "Rozpoczeto program" << endl;
 
-    ParametryAnalizy PA(para_detektorow, liczba_pomiarow);
-
-	cout << "Stworzono zmienną PA" << endl;
-
-    PA.openAndSetupFiles("DataR_run-001.root", "new_Analysis_DataR_run-001.root",1e6, inputFile, inputTree, f_output, energia, czas, channel);
+    openAndSetupFiles("DataR_run-001.root", "new_Analysis_DataR_run-001.root",1e6, inputFile, inputTree, f_output, energia, czas, channel);
 
 	cout << "Otwarto pliki" << endl;
 
-    // PA.initalizeHistograms();
+    timeVectorComputing("czas_do_kalibracji.txt"); // wektor bedzie dostepny pod PA.wektor_czasu
 
-    // PA.timeVectorComputing("czas_do_kalibracji.txt"); // wektor bedzie dostepny pod PA.wektor_czasu
+	cout << "NENTRIES" << n_entries << endl;
 
-	cout << "NENTRIES" << PA.n_entries << endl;
+    fillTotalVectors(false);
 
-    PA.fillTotalVectors(false);
+    preFitting();
 
-    PA.preFitting();
-
+    coincidenceTimeVectors(0,1000);
+    coincidenceTimeVectors(1000,2000);
 
     f_output->Write();
 }
