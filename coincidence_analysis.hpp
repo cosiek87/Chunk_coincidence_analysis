@@ -256,7 +256,7 @@ void coincidenceTimeVectors(ULong64_t beginning, ULong64_t ending) {
             inputTree -> GetEntry(i);
             stan = measurementPoint(wektor_czasu, czas); //stan tarczy: wartosc nieparzysta - obrot, parzysta - pomiar
             pozycja = stan / 2;
-		    if (i%1000000 == 0) cout<<i<<endl;
+            if (i%1000000 == 0) cout<<i<<endl;
             if ((channel > 5) && ((stan % 2) == 0)) continue;
             if ((channel % 2) == 0) continue;
             if ((channel < start_det) || (channel >= stop_det)) continue;
@@ -373,5 +373,64 @@ void findCoincidence(){
         }
 }
 
+void countsExtractionToVector(){
+    for (Int_t det = 0; det < liczba_det; det++) {
+		for (Int_t i = 0; i < liczba_pomiarow; i++) {
+			zliczenia[det][i] = (h[det][i]->IntegralAndError(h[det][i]->FindBin(zakres_energii[0][det]), h[det][i]->FindBin(zakres_energii[1][det]), blad_zliczenia[det][i]));
+		}
+	}
+}
 
 
+void countsProcessing(Double_t activity, vector < ULong64_t > &timeVector){
+	for (Int_t det = 0; det < liczba_det; det++) {
+		for (Int_t i = 0; i < liczba_pomiarow; i++) {
+			zliczenia[det][i] = 1e12*zliczenia[det][i]/((timeVector[2*i+1] - timeVector[2*i])*activity);
+			blad_zliczenia[det][i] = 1e12*blad_zliczenia[det][i]/((timeVector[2*i+1] - timeVector[2*i])*activity);
+        }
+	}
+}
+
+
+void countsProcessing(vector < ULong64_t > &timeVector){
+	for (Int_t det = 0; det < liczba_det; det++) {
+		for (Int_t i = 0; i < liczba_pomiarow; i++) {
+			zliczenia[det][i] = 1e12*zliczenia[det][i]/((timeVector[2*i+1] - timeVector[2*i]));
+			blad_zliczenia[det][i] = 1e12*blad_zliczenia[det][i]/((timeVector[2*i+1] - timeVector[2*i]));
+        }
+	}
+}
+
+
+void countsProcessing(){
+	for (Int_t det = 0; det < liczba_det; det++) {
+		for (Int_t i = 0; i < liczba_pomiarow; i++) {
+			zliczenia[det][i] = zliczenia[det][i];
+			blad_zliczenia[det][i] = blad_zliczenia[det][i];
+        }
+	}
+}
+
+
+void resultsPrint(){
+	for (Int_t det = 0; det < liczba_det; det++) {
+		cout << "Liczba zliczen w pomiarze - detektor "<< det << endl;
+		for (Int_t i = 0; i < liczba_pomiarow; i++) {
+			cout << "\t\t" << zliczenia[det][i];
+			cout << "\t\t" << blad_zliczenia[det][i] << endl;
+		}
+	}
+}
+
+
+void resultsExtraction(const char* extractionFileName){
+    char plik[200];
+	for (Int_t det = 0; det < liczba_det; det++) {
+		sprintf(plik, "%s_%d",extractionFileName, det);
+		ofstream aktywnosci(plik);
+		for (Int_t i = 0; i < liczba_pomiarow; i++) {
+			aktywnosci << zliczenia[det][i] << "\t\t" << blad_zliczenia[det][i] << endl;
+		}
+		aktywnosci.close();
+	}
+}

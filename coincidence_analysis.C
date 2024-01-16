@@ -79,5 +79,22 @@ void coincidence_analysis() {
 
 	// cout << "Analiza koincydencyjna zakonczona. Wprowadzono elementow " << n_entried_entries  << "\n Dalsza analiza danych" << n_entries << endl;
 
+	countsExtractionToVector();
+
+	// cout << "Wyeksportowano liczbę zliczeń do wektorów"  << "\n Dalsza analiza danych" << endl;
+
+
+	//Poniższa funkcja może przyjmować 2, 1 lub żadnego parametru. 
+	// - countsProcessing(aktywnosc, wektor_czasu) wtedy obliczona zostaje wydajność pomiaru
+	// - countsProcessing(wektor_czasu) wtedy obliczona zostaje liczba zliczeń na jednostkę czasu
+	// - countsProcessing() wtedy zostaje liczba zliczeń
+	countsProcessing();
+
+	// cout << "Opracowano wymagany wynik."  << "\n Zwrot danych" << endl;
+
+	resultsPrint(); // Wyprintowanie wyników, można pomijać
+
+	resultsExtraction("results.txt"); // Funkcja ta przyjmuje nazwe koncowego pliku do ktorego wyeksportuje wszystkie dane.
+
     f_output->Write();
 }
