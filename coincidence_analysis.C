@@ -64,6 +64,7 @@ void coincidence_analysis() {
 	// cout << "Otwarto pliki \n Tworzenie wektora obrotow" << endl;
 
     timeVectorComputing(); 
+    // timeVectorComputing("czas_do_analizy.txt"); 
 
 	// cout << "Wektor obrotow policzony \n Przygotowanie histogramow totalnych dla n_entries " << n_entries << endl;
 
@@ -88,6 +89,8 @@ void coincidence_analysis() {
 	// - countsProcessing(aktywnosc, wektor_czasu) wtedy obliczona zostaje wydajność pomiaru
 	// - countsProcessing(wektor_czasu) wtedy obliczona zostaje liczba zliczeń na jednostkę czasu
 	// - countsProcessing() wtedy zostaje liczba zliczeń
+	// countsProcessing(38000, wektor_czasu);
+	// countsProcessing(wektor_czasu);
 	countsProcessing();
 
 	// cout << "Opracowano wymagany wynik."  << "\n Zwrot danych" << endl;

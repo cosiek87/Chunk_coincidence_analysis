@@ -19,7 +19,7 @@ def clustersPlot(czas_kmeans, kroki_kmeans, clusters):
 
 def stepsClusterization(nazwa_pliku):
     nazwa_pliku = os.path.split(nazwa_pliku)[1]
-    czas_kmeans = np.loadtxt(nazwa_pliku, encoding='utf-16')
+    czas_kmeans = np.loadtxt(nazwa_pliku)
     kroki_kmeans = np.array([1 for i in range(len(czas_kmeans))])
     data = np.array([czas_kmeans,kroki_kmeans]).transpose()
     clusters = [[czas_kmeans[0]]]

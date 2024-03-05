@@ -65,7 +65,7 @@ Double_t gausswithlinearbkg(Double_t * xarg, Double_t * par) {
 }
 
 
-Int_t liczba_pomiarow = 2;
+Int_t liczba_pomiarow = 20;
 
 Int_t liczba_par_det = 3;
 Int_t liczba_det = 6;
@@ -74,11 +74,11 @@ Int_t stop_det = 6;
 
 vector < ULong64_t > czas_koincydencji = {25000, 20000, 30000};
 
-Double_t ile_sigma = 1;
+Double_t ile_sigma = 3;
 
-Int_t numberofbins = 300; //liczba binow w widme energergetycznym; zmniejszajac jej wartosc otrzymujemy lepsza statystykew binach ale gorsza rozdzielczosc (mniej pewna wartosc dopasowanej centroidy)
+Int_t numberofbins = 3000; //liczba binow w widme energergetycznym; zmniejszajac jej wartosc otrzymujemy lepsza statystykew binach ale gorsza rozdzielczosc (mniej pewna wartosc dopasowanej centroidy)
 
-Float_t minimum = 0, maksimum = 1000; //zakres widma energetycznego wyrazone w kanalach
+Float_t minimum = 0, maksimum = 10000; //zakres widma energetycznego wyrazone w kanalach
 
 Double_t zliczenia_amplituda = maksimum / numberofbins;
 
@@ -92,12 +92,12 @@ Int_t stan, pozycja;
 
 ULong64_t chunk = 0;
 ULong64_t begin_chunk, end_chunk, chunks, length_of_chunk;
-ULong64_t limit_list = 1000000;
-ULong64_t bufor = 100000;
+ULong64_t limit_list = 100000;
+ULong64_t bufor = 10000;
 ULong64_t n_entried_entries=0; 
 
-vector < vector < Double_t >> zakres_energii = {{175, 135, 2400, 1700, 1400, 3700}, //Dolny zakres det0 det1 det2...
-                                                {260, 200, 3050, 2300, 2000, 4400}}; // Górny zakres det0 det1 det2...
+vector < vector < Double_t >> zakres_energii = {{2700, 4400, 2400, 1600, 1400, 3600}, //Dolny zakres det0 det1 det2...
+                                                {3300, 5800, 3200, 2400, 2000, 4400}}; // Górny zakres det0 det1 det2...
 vector < vector < Double_t >> zliczenia(liczba_det, vector <Double_t> (liczba_pomiarow));
 vector < vector < Double_t >> blad_zliczenia(liczba_det, vector <Double_t> (liczba_pomiarow));
 vector < vector < Double_t >> blad_zliczenia_fixed(liczba_det, vector <Double_t>(liczba_pomiarow));
@@ -130,6 +130,7 @@ bool within511kevRange(vector < vector < Double_t >> &zakres_energii, UShort_t E
 ULong64_t searchClosest(std::vector < ULong64_t > & sorted_array, ULong64_t x) {
     auto iter_geq = std::lower_bound(sorted_array.begin(), sorted_array.end(), x);
     if (iter_geq == sorted_array.begin()) return 0;
+    if (iter_geq == sorted_array.end()) return -1;
     ULong64_t a = * (iter_geq - 1);
     ULong64_t b = * (iter_geq);
     if (fabs(x - a) < fabs(x - b)) return iter_geq - sorted_array.begin() - 1;
@@ -206,7 +207,7 @@ void timeVectorComputing() {
 };
 
 
-void fillTotalVectors(bool limit_511_kev){
+void fillTotalVectors(){
     for (Int_t i = 0; i < n_entries; i++) {
         inputTree -> GetEntry(i);
         if (channel == 7) h_step_time -> Fill(czas / 1e12); // widmo krokow silnika
@@ -270,8 +271,9 @@ void coincidenceTimeVectors(ULong64_t beginning, ULong64_t ending) {
 bool w_zakresie_elipsy(UShort_t energia_dol, UShort_t energia_gora, UShort_t channel,TF1 * pre_dopasowanie[], Double_t ile_sigma) {
     UShort_t srodek_1 = pre_dopasowanie[channel-1] -> GetParameter(1), srodek_2 = pre_dopasowanie[channel] -> GetParameter(1);
     UShort_t sigma_1 = pre_dopasowanie[channel-1] -> GetParameter(2), sigma_2 = pre_dopasowanie[channel] -> GetParameter(2);
-    if (TMath::Power((energia_dol - srodek_1) / (ile_sigma*sigma_1), 2) + TMath::Power((energia_gora - srodek_2) 
-        / (ile_sigma*sigma_2), 2) > 1) return true;
+    if (TMath::Power((energia_dol - srodek_1) / (ile_sigma*sigma_1), 2) 
+        + TMath::Power((energia_gora - srodek_2) 
+    / (ile_sigma*sigma_2), 2) > 1) return true;
     return false;
 }
 
@@ -331,6 +333,7 @@ void findCoincidence(){
 		if (channel < start_det || channel >= stop_det) continue;
 		channel %= liczba_det;
 		auto closest_higher_time_index = searchClosest(wektor_timestamp[(channel) / 2][pozycja], czas);
+        if (closest_higher_time_index == -1) continue;
 		auto closest_lower_time_index = (closest_higher_time_index - 1) * ((closest_higher_time_index - 1) > 0);
 		if (closest_higher_time_index > wektor_timestamp[(channel) / 2][pozycja].size() - 1 ||
 			closest_lower_time_index > wektor_timestamp[(channel) / 2][pozycja].size() - 1 ||
@@ -347,7 +350,7 @@ void findCoincidence(){
 			delta_time = delta_time_low;
 		}	
 		h_delta_time[(channel) / 2] -> Fill(delta_time);
-		if (i%1000000 == 0) cout<<i<<endl;
+		if (i%100000 == 0) cout<<i<<endl;
 		if (delta_time < czas_koincydencji[(channel) / 2]) {
 			energia_other = energia;
 			inputTree -> GetEntry(wektor_entry[(channel) / 2][pozycja][closest_time_index]);
@@ -365,11 +368,11 @@ void findCoincidence(){
     cout << "Weszlo" << n_entried_entries << endl;
     wektor_czasu.insert(wektor_czasu.end(), czas); // na koniec wektora czasu dorzucany jest koniec pomiaru.
     for (Int_t i = 0; i < liczba_det; i++){
-        for (Int_t k = 0; i < liczba_pomiarow; i++){
-            h[i][k] -> Write(); // wypelniane jest widmo energetyczne w zaleznosci od kanalu i pozycji
-            h_2d[i / 2][k] -> Write();
+        for (Int_t k = 0; k < liczba_pomiarow; k++){
+                h[i][k] -> Write(); // wypelniane jest widmo energetyczne w zaleznosci od kanalu i pozycji
+                h_2d[i / 2][k] -> Write();
             }
-        total_h_2d[i / 2] -> Write();
+            total_h_2d[i / 2] -> Write();
         }
 }
 
