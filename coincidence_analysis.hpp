@@ -460,4 +460,29 @@ void generateReport() {
             std::cout << "Numer detektora: " << det << "\tnumer pomiaru: " << i << "\tliczba eventów: " << h[det][i]->GetEntries() << std::endl;
         }
     }
+    std::cout << "\n\n" << std::endl;
+    std::cout << "Charakterystyka czasowa analizowanego pomiaru" << std::endl;
+    if (wektor_czasu.size()%2==1)
+    {    std::cout << "Indeks:" << 0 << "\tNumer pomiaru:" << 0 << "\t czas start: "  << 0 << " s" << std::endl;
+    for (size_t i = 0; i < wektor_czasu.size(); ++i) {
+        if (((i+1)%2)==0){
+        std::cout << "Indeks:" << i+1 << "\tNumer pomiaru:" << (i+1)/2 << "\t czas start: "  << std::fixed <<  static_cast<double>(wektor_czasu[i]) / 1e12 << " s" << std::endl;
+        }
+        else {
+        std::cout << "Indeks:" << i+1 << "\tNumer pomiaru:" << (i+1)/2 << "\t czas stop: "  << std::fixed <<  static_cast<double>(wektor_czasu[i]) / 1e12 << " s" << std::endl;
+    
+        }
+    }}
+    else {
+        for (size_t i = 0; i < wektor_czasu.size(); ++i) {
+        if ((i%2)==0){
+        std::cout << "Indeks:" << i+1 << "\tNumer pomiaru:" << (i+1)/2 << "\t czas start: "  << std::fixed <<  static_cast<double>(wektor_czasu[i]) / 1e12 << " s" << std::endl;
+        }
+        else {
+        std::cout << "Indeks:" << i+1 << "\tNumer pomiaru:" << (i+1)/2 << "\t czas stop: "  << std::fixed <<  static_cast<double>(wektor_czasu[i]) / 1e12 << " s" << std::endl;
+    
+        }
+    }
+    }
+
 }
