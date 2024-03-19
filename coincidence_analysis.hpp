@@ -439,22 +439,9 @@ void resultsExtraction(const char* extractionFileName){
 }
 
 
-void resultsExtraction(const char* extractionFileName){
-    char plik[200];
-	for (Int_t det = 0; det < liczba_det; det++) {
-		sprintf(plik, "%s_%d",extractionFileName, det);
-		ofstream aktywnosci(plik);
-		for (Int_t i = 0; i < liczba_pomiarow; i++) {
-			aktywnosci << zliczenia[det][i] << "\t\t" << blad_zliczenia[det][i] << endl;
-		}
-		aktywnosci.close();
-	}
-}
-
-
 void generateReport() {
     // Sprawdzenie, czy wektor czasu oraz histogram są poprawne
-    if (wektor_czasu.empty() || !hist) {
+    if (wektor_czasu.empty()) {
         std::cerr << "Błąd: Wektor czasu lub histogram jest pusty!" << std::endl;
         return;
     }
