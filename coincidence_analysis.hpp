@@ -437,3 +437,40 @@ void resultsExtraction(const char* extractionFileName){
 		aktywnosci.close();
 	}
 }
+
+
+void resultsExtraction(const char* extractionFileName){
+    char plik[200];
+	for (Int_t det = 0; det < liczba_det; det++) {
+		sprintf(plik, "%s_%d",extractionFileName, det);
+		ofstream aktywnosci(plik);
+		for (Int_t i = 0; i < liczba_pomiarow; i++) {
+			aktywnosci << zliczenia[det][i] << "\t\t" << blad_zliczenia[det][i] << endl;
+		}
+		aktywnosci.close();
+	}
+}
+
+
+void generateReport() {
+    // Sprawdzenie, czy wektor czasu oraz histogram są poprawne
+    if (wektor_czasu.empty() || !hist) {
+        std::cerr << "Błąd: Wektor czasu lub histogram jest pusty!" << std::endl;
+        return;
+    }
+
+    // Pobranie ostatniego timestampu z wektora czasu
+    double lastTimestamp = static_cast<double>(wektor_czasu.back()) / 1e9;
+
+    // Wygenerowanie raportu
+    std::cout << "Raport:" << std::endl;
+    std::cout << "Ostatni timestamp z wektora czasu: " << lastTimestamp << " sekund" << std::endl;
+    std::cout << "Liczba przeanalizowanych zdarzeń dla każdego detektora i pomiaru:" << std::endl;
+    std::cout << "" << std::endl;
+    
+    for (int det = 0; det < liczba_det; det++) {
+        for (int i = 0; i < liczba_pomiarow; i++) {
+            std::cout << "Numer detektora: " << det << "\tnumer pomiaru: " << i << "\tliczba eventów: " << h[det][i]->GetEntries() << std::endl;
+        }
+    }
+}

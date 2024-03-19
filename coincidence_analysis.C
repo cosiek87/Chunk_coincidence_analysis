@@ -99,5 +99,7 @@ void coincidence_analysis() {
 
 	resultsExtraction("results.txt"); // Funkcja ta przyjmuje nazwe koncowego pliku do ktorego wyeksportuje wszystkie dane.
 
+	generateReport();
+
     f_output->Write();
 }
