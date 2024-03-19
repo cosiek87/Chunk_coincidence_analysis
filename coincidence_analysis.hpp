@@ -447,11 +447,11 @@ void generateReport() {
     }
 
     // Pobranie ostatniego timestampu z wektora czasu
-    double lastTimestamp = static_cast<double>(wektor_czasu.back()) / 1e9;
+    double lastTimestamp = static_cast<double>(wektor_czasu.back()) / 1e12;
 
     // Wygenerowanie raportu
     std::cout << "Raport:" << std::endl;
-    std::cout << "Ostatni timestamp z wektora czasu: " << lastTimestamp << " sekund" << std::endl;
+    std::cout << "Ostatni timestamp z wektora czasu: " << std::fixed << lastTimestamp << " sekund" << std::endl;
     std::cout << "Liczba przeanalizowanych zdarzeń dla każdego detektora i pomiaru:" << std::endl;
     std::cout << "" << std::endl;
     
